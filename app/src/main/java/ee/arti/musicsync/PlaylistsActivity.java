@@ -7,7 +7,7 @@ import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 
-public class PlayilistsActivity extends AppCompatActivity {
+public class PlaylistsActivity extends AppCompatActivity {
 
     private static final String TAG = "PlaylistsActivity";
 
