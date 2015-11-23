@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <EditTextPreference
+        android:title="@string/api_key_title"
+        android:key="api_key"
+        android:summary="@string/api_key_summary"/>
+
+    <EditTextPreference
+        android:title="@string/server_title"
+        android:key="server"
+        android:summary="@string/server_sumary"
+        android:defaultValue="@string/default_server"/>
+</PreferenceScreen>
