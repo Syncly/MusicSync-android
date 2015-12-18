@@ -33,7 +33,7 @@ import org.json.JSONObject;
 import java.util.ArrayList;
 import java.util.HashMap;
 
-public class PlaylistsActivity extends AppCompatActivity {
+public class PlaylistsActivity extends AppCompatActivity implements SyncServiceResultReceiver.Receiver {
 
     private static final String TAG = "PlaylistsActivity";
     private static final String TAG_PLAYLIST_TITLE = "title";
@@ -96,6 +96,7 @@ public class PlaylistsActivity extends AppCompatActivity {
             public void onRefresh() {
                 Log.d(TAG, "Refresh");
                 getPLaylists();
+                //SyncService.startActionGetPlaylists(getApplicationContext(), server);
             }
         });
 
@@ -103,7 +104,7 @@ public class PlaylistsActivity extends AppCompatActivity {
         queue = Volley.newRequestQueue(this);
 
         getPLaylists();
-
+        //SyncService.startActionGetEvents(this, server);
     }
 
     @Override
@@ -134,29 +135,29 @@ public class PlaylistsActivity extends AppCompatActivity {
     }
 
     private void getPLaylists() {
+        SyncService.startActionGetPlaylists(this, server);
         showSpinner();
         JsonArrayRequest playlistsReq = new JsonArrayRequest(Request.Method.GET, server + "playlists", null,
-                new Response.Listener<JSONArray>() {
-                    @Override
-                    public void onResponse(JSONArray resp) {
-                        Log.d(TAG, "Got playlists");
-                        playlists.clear();
-                        for(int i = 0; i < resp.length(); i++) {
-                            try {
-                                JSONObject playlist = resp.getJSONObject(i);
-                                HashMap<String, String> plitem = new HashMap<String, String>();
-                                // add some dummy data
-                                plitem.put(TAG_PLAYLIST_TITLE, playlist.getString(TAG_PLAYLIST_TITLE));
-                                plitem.put(TAG_PLAYLIST_ID, playlist.getString(TAG_PLAYLIST_ID));
-                                plitem.put(TAG_PLAYLIST_STATUS, "OK");
-                                playlists.add(plitem);
-                                adapter.notifyDataSetChanged();
-                            } catch (JSONException e) {
-                                e.printStackTrace();
-                            }
+            new Response.Listener<JSONArray>() {
+                @Override
+                public void onResponse(JSONArray resp) {
+                    Log.d(TAG, "Got playlists");
+                    playlists.clear();
+                    for(int i = 0; i < resp.length(); i++) {
+                        try {
+                            JSONObject playlist = resp.getJSONObject(i);
+                            HashMap<String, String> plitem = new HashMap<String, String>();
+                            plitem.put(TAG_PLAYLIST_TITLE, playlist.getString(TAG_PLAYLIST_TITLE));
+                            plitem.put(TAG_PLAYLIST_ID, playlist.getString(TAG_PLAYLIST_ID));
+                            plitem.put(TAG_PLAYLIST_STATUS, "OK");
+                            playlists.add(plitem);
+                            adapter.notifyDataSetChanged();
+                        } catch (JSONException e) {
+                            e.printStackTrace();
                         }
-                        swipeContainer.setRefreshing(false);
                     }
+                    swipeContainer.setRefreshing(false);
+                }
                 }, new Response.ErrorListener() {
                     @Override
                     public void onErrorResponse(VolleyError error) {
@@ -165,6 +166,11 @@ public class PlaylistsActivity extends AppCompatActivity {
                     }
                 });
         queue.add(playlistsReq);
+    }
+
+    public void onReceiveResult(int status, Bundle result) {
+        Log.d(TAG, result.getString("playlists"));
+
     }
 
     private void showSpinner() {
