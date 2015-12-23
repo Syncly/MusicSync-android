@@ -104,7 +104,7 @@ public class PlaylistsActivity extends AppCompatActivity implements SyncServiceR
         queue = Volley.newRequestQueue(this);
 
         getPLaylists();
-        //SyncService.startActionGetEvents(this, server);
+        SyncEventsService.startActionGetEvents(this);
     }
 
     @Override
@@ -135,7 +135,7 @@ public class PlaylistsActivity extends AppCompatActivity implements SyncServiceR
     }
 
     private void getPLaylists() {
-        SyncService.startActionGetPlaylists(this, server);
+        //SyncService.startActionGetPlaylists(this, server);
         showSpinner();
         JsonArrayRequest playlistsReq = new JsonArrayRequest(Request.Method.GET, server + "playlists", null,
             new Response.Listener<JSONArray>() {

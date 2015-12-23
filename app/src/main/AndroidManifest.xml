@@ -36,6 +36,9 @@
 
         <service
             android:name=".SyncService"
+            android:exported="false" />
+        <service
+            android:name=".SyncEventsService"
             android:exported="false"></service>
     </application>
 
