@@ -1,131 +1,220 @@
 package ee.arti.musicsync;
 
-import android.app.IntentService;
-import android.content.Intent;
+import android.app.Service;
 import android.content.Context;
+import android.content.Intent;
+import android.content.SharedPreferences;
 import android.os.Bundle;
-import android.os.Handler;
-import android.os.ResultReceiver;
+import android.os.IBinder;
+import android.preference.PreferenceManager;
 import android.util.Log;
 
-import com.android.volley.Request;
-import com.android.volley.RequestQueue;
-import com.android.volley.Response;
-import com.android.volley.VolleyError;
-import com.android.volley.toolbox.BasicNetwork;
-import com.android.volley.toolbox.HurlStack;
 import com.android.volley.toolbox.JsonArrayRequest;
-import com.android.volley.toolbox.NoCache;
-import com.android.volley.toolbox.Volley;
 
 import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
 
-import ee.arti.musicsync.SyncServiceResultReceiver.Receiver;
+import java.io.BufferedInputStream;
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.net.HttpURLConnection;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.util.ArrayList;
+import java.util.HashMap;
 
-/**
- * An {@link IntentService} subclass for handling asynchronous task requests in
- * a service on a separate handler thread.
- */
-public class SyncService extends IntentService {
+public class SyncService extends Service {
 
-    // logger tag
     private static final String TAG = "SyncService";
 
-    // Actions provided by this service
-    private static final String ACTION_GET_PLAYLISTS = "ee.arti.musicsync.action.GET_PLAYLISTS";
-    private static final String ACTION_GET_SONGS = "ee.arti.musicsync.action.GET_SONGS";
+    public static final String NOTIFICATION = "ee.arti.musicsync.service.SyncService";
 
-    // Params
-    // Callback
-    private static final String EXTRA_RESULT = "ee.arti.musicsync.extra.RESULT";
-    // Api server to talk to
-    private static final String EXTRA_SERVER = "ee.arti.musicsync.extra.SERVER";
-    // Playlist id to use
-    private static final String EXTRA_PLAYLIST = "ee.arti.musicsync.extra.PLAYLIST";
+    public static final String ACTION_START = "service.start";
+    public static final String ACTION_STOP = "service.stop";
+    public static final String ACTION_UPDATE_SETTINGS = "service.update_settings";
+    public static final String ACTION_GET_PLAYLISTS = "service.get_playlists";
+    public static final String ACTION_GET_SONGS = "service.get_songs";
 
-    private static final int STATUS_OK = 0;
-    private static final int STATUS_ERROR = 1;
+    private boolean isRunning  = false;
+    private Thread tEvents;
 
-    public static SyncServiceResultReceiver receiver;
+    // Settings
+    private SharedPreferences SP;
+    private String server;
 
-    private static RequestQueue requestQueue;
 
-    public SyncService() {
-        super("SyncService");
-        requestQueue = new RequestQueue(new NoCache(), new BasicNetwork(new HurlStack()));
+    static public void startService(Context context) {
+        Intent intent = new Intent(context, SyncService.class);
+        intent.setAction(ACTION_START);
+        context.startService(intent);
     }
 
-    /**
-     * @see IntentService
-     */
-    public static void startActionGetPlaylists(Context context, String server) {
+    static public void stopService(Context context) {
         Intent intent = new Intent(context, SyncService.class);
-        receiver = new SyncServiceResultReceiver(new Handler());
-        receiver.setReceiver((Receiver) context);
-        intent.putExtra(EXTRA_RESULT, receiver);
+        intent.setAction(ACTION_STOP);
+        context.startService(intent);
+    }
+
+    static public void updateSettings(Context context) {
+        Intent intent = new Intent(context, SyncService.class);
+        intent.setAction(ACTION_UPDATE_SETTINGS);
+        context.startService(intent);
+    }
+
+    static public void getPlaylists(Context context) {
+        Intent intent = new Intent(context, SyncService.class);
         intent.setAction(ACTION_GET_PLAYLISTS);
-        intent.putExtra(EXTRA_SERVER, server);
         context.startService(intent);
     }
 
-    /**
-     * @see IntentService
-     */
-    public static void startActionGetSongs(Context context, String server, String playlist) {
-        Intent intent = new Intent(context, SyncService.class);
-        intent.setAction(ACTION_GET_SONGS);
-        receiver = new SyncServiceResultReceiver(new Handler());
-        receiver.setReceiver((Receiver) context);
-        intent.putExtra(EXTRA_RESULT, receiver);
-        intent.putExtra(EXTRA_SERVER, server);
-        intent.putExtra(EXTRA_PLAYLIST, playlist);
-        context.startService(intent);
-    }
 
-    @Override
-    protected void onHandleIntent(Intent intent) {
-        if (intent != null) {
-            final ResultReceiver receiver = intent.getParcelableExtra(EXTRA_RESULT);
-            final String server = intent.getStringExtra(EXTRA_SERVER);
-            final String action = intent.getAction();
+    public class HttpGet implements Runnable {
+
+        private Context context;
+        private String action;
+
+        public HttpGet(Context context, String action) {
+            this.context = context;
+            this.action = action;
+        }
+
+        public HttpGet(Context context) {
+            this.context = context;
+        }
+
+        public void run() {
+            String addr = "";
+            try {
+                if (ACTION_GET_PLAYLISTS.equals(action)) {
+                    addr = server+"/playlists";
+                }
+                URL url = new URL(addr);
+                HttpURLConnection urlConnection = (HttpURLConnection) url.openConnection();
+                Log.d(TAG, "HTTP response: " + urlConnection.getResponseCode());
+                InputStream inputStream = new BufferedInputStream(urlConnection.getInputStream());
+                Log.d(TAG, "Reading stream");
+                responseParser(inputStream);
+            } catch (MalformedURLException e) {
+                e.printStackTrace();
+            } catch (IOException e) {
+                Log.e(TAG, "Error on url openConnection: "+e.getMessage());
+                e.printStackTrace();
+            }
+            Log.d(TAG, "thread has ended its code");
+        }
+
+        public void responseParser(InputStream inputStream) throws IOException {
+            BufferedReader br = new BufferedReader(new InputStreamReader(inputStream));
+            StringBuilder sb = new StringBuilder();
+            String line;
+            while ((line = br.readLine()) != null) {
+                sb.append(line+"\n");
+            }
+            br.close();
+            sendResponse(sb.toString());
+        }
+
+        public void sendResponse(String resp) {
             if (ACTION_GET_PLAYLISTS.equals(action)) {
-                handleActionGetPlaylists(receiver, server);
+                Intent intent = new Intent();
+                intent.setAction(NOTIFICATION);
+                intent.putExtra("action", this.action);
+
+                try {
+                    JSONArray jspls = new JSONArray(resp);
+
+                    ArrayList<HashMap> ba = new ArrayList<>();
+                    for (int i = 0; i < jspls.length(); i++) {
+                        JSONObject jspl = jspls.getJSONObject(i);
+                        HashMap<String, String> p = new HashMap();
+                        p.put(PlaylistsActivity.TAG_PLAYLIST_STATUS, jspl.optString("status", "OK"));
+                        p.put(PlaylistsActivity.TAG_PLAYLIST_TITLE, jspl.getString("title"));
+                        p.put(PlaylistsActivity.TAG_PLAYLIST_ID, jspl.getString("_id"));
+                        ba.add(p);
+                    }
+                    intent.putExtra("data", ba);
+                    context.sendBroadcast(intent);
+                }catch (JSONException e) {
+                    e.printStackTrace();
+                }
             } else if (ACTION_GET_SONGS.equals(action)) {
-                final String playlist = intent.getStringExtra(EXTRA_SERVER);
-                handleActionGetSongs(receiver, server, playlist);
+                Log.d(TAG, ACTION_GET_PLAYLISTS + " Not implemented");
             }
         }
     }
 
-    /**
-     * Get playlists in a background thread
-     */
-    private void handleActionGetPlaylists(final ResultReceiver receiver, String server) {
-        Log.d(TAG, "GetPlaylists " + server);
+    public class Events implements Runnable {
 
-        JsonArrayRequest playlistsReq = new JsonArrayRequest(Request.Method.GET, server + "playlists", null,
-            new Response.Listener<JSONArray>() {
-                @Override
-                public void onResponse(JSONArray resp) {
-                    Log.d(TAG, "Got playlists in sync service");
-                    Bundle respBundle = new Bundle();
-                    respBundle.putString("playlists", resp.toString());
-                    receiver.send(STATUS_OK, respBundle);
-                }
-            }, new Response.ErrorListener() {
-            @Override
-            public void onErrorResponse(VolleyError error) {
-                Log.d(TAG, "Error: " + error.getMessage());
+        Context context;
 
-            }
-        });
-        requestQueue.add(playlistsReq);
+        public Events(Context context) {
+            this.context = context;
+        }
+
+        public void run() {
+            Log.d(TAG+"Events", "Ran the thread, server: "+ server);
+        }
     }
 
-    /**
-     * Get songs in a playlist
-     */
-    private void handleActionGetSongs(ResultReceiver receiver, String server, String playlist) {
-        Log.d(TAG, "GetSongs " + server + " " + playlist);
+    private void getSettings() {
+        PreferenceManager.setDefaultValues(this, R.xml.settings, false);
+        // get the settings
+        SP = PreferenceManager.getDefaultSharedPreferences(this);
+        // load settings into local variables with defaults
+        server = SP.getString("server", getResources().getString(R.string.default_server));
+    }
+
+    @Override
+    public void onCreate() {
+        Log.i(TAG, "Service onCreate");
+        isRunning = true;
+        getSettings();
+    }
+
+    @Override
+    public int onStartCommand(Intent intent, int flags, int startId) {
+        Log.i(TAG, "Service onStartCommand");
+
+        if (intent != null) {
+            String action = intent.getAction();
+
+            if (ACTION_START.equals(action)) {
+                Log.d(TAG, "ACTION_START");
+                if (tEvents == null || !tEvents.isAlive()) {
+                    tEvents = new Thread(new Events(SyncService.this));
+                    Log.d(TAG, "Starting tEvents");
+                    tEvents.start();
+                } else {
+                    Log.d(TAG, "tEvents already running not starting a new one");
+                }
+            } else if (ACTION_STOP.equals(action)) {
+                stopSelf();
+            } else if (ACTION_UPDATE_SETTINGS.equals(action)) {
+                getSettings();
+            } else if (ACTION_GET_PLAYLISTS.equals(action)) {
+                new Thread(new HttpGet(SyncService.this, action)).start();
+            }
+        }
+        return Service.START_NOT_STICKY;
+    }
+
+    @Override
+    public IBinder onBind(Intent arg0) {
+        Log.i(TAG, "Service onBind");
+        return null;
+    }
+
+    @Override
+    public void onDestroy() {
+        Log.i(TAG, "Service onDestroy");
+        isRunning = false;
+        try {
+            tEvents.interrupt();
+        }catch (NullPointerException e) {
+            e.printStackTrace();
+        }
     }
 }

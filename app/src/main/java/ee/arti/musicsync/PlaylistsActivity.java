@@ -1,6 +1,9 @@
 package ee.arti.musicsync;
 
+import android.content.BroadcastReceiver;
+import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.preference.PreferenceManager;
 import android.support.v4.widget.SwipeRefreshLayout;
@@ -33,12 +36,12 @@ import org.json.JSONObject;
 import java.util.ArrayList;
 import java.util.HashMap;
 
-public class PlaylistsActivity extends AppCompatActivity implements SyncServiceResultReceiver.Receiver {
+public class PlaylistsActivity extends AppCompatActivity {
 
     private static final String TAG = "PlaylistsActivity";
-    private static final String TAG_PLAYLIST_TITLE = "title";
-    private static final String TAG_PLAYLIST_STATUS = "status";
-    private static final String TAG_PLAYLIST_ID = "_id";
+    public static final String TAG_PLAYLIST_TITLE = "title";
+    public static final String TAG_PLAYLIST_STATUS = "status";
+    public static final String TAG_PLAYLIST_ID = "_id";
 
     // contains all the playlists
     ArrayList<HashMap<String, String>> playlists = new ArrayList<HashMap<String, String>>();;
@@ -49,24 +52,48 @@ public class PlaylistsActivity extends AppCompatActivity implements SyncServiceR
 
     private SwipeRefreshLayout swipeContainer;
 
-    // settings object
-    private SharedPreferences SP;
+    private BroadcastReceiver receiver = new BroadcastReceiver() {
 
-    // internet suff
-    String server;
-    String api_key;
-    // volley
-    RequestQueue queue;
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            Log.d(TAG, "BroadcastReceiver");
+            Bundle bundle = intent.getExtras();
+            if (bundle != null) {
+                String string = bundle.getString("message");
+                //Toast.makeText(PlaylistsActivity.this, string, Toast.LENGTH_LONG).show();
+                if (bundle.containsKey("action")){
+                    Log.d(TAG, "action " + bundle.get("action"));
+                    ArrayList<HashMap> pl = (ArrayList)bundle.getSerializable("data");
+                    playlists.clear();
+                    for (HashMap<String, String> el: pl) {
+                        playlists.add(el);
+                    }
+                    adapter.notifyDataSetChanged();
+                    swipeContainer.setRefreshing(false);
+                }
+            }
+        }
+    };
 
-
+    @Override
+    protected void onResume() {
+        super.onResume();
+        Log.d(TAG, "onResume");
+        registerReceiver(receiver, new IntentFilter(SyncService.NOTIFICATION));
+        SyncService.startService(this);
+    }
+    @Override
+    protected void onPause() {
+        super.onPause();
+        Log.d(TAG, "onPause");
+        unregisterReceiver(receiver);
+    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        Log.d(TAG, "onCreate");
         setContentView(R.layout.activity_playlists);
-
-        // get app settings
-        getSettings();
 
          // Create the adapter that will show our playlists in a scrollable list view
         adapter=new SimpleAdapter(this, playlists, R.layout.playlist_element,
@@ -95,23 +122,19 @@ public class PlaylistsActivity extends AppCompatActivity implements SyncServiceR
             @Override
             public void onRefresh() {
                 Log.d(TAG, "Refresh");
-                getPLaylists();
-                //SyncService.startActionGetPlaylists(getApplicationContext(), server);
+                SyncService.getPlaylists(getApplicationContext());
             }
         });
 
-
-        queue = Volley.newRequestQueue(this);
-
-        getPLaylists();
-        SyncEventsService.startActionGetEvents(this);
+        SyncService.getPlaylists(this);
+        showSpinner();
     }
 
     @Override
     public void onStart() {
         super.onStart();
         Log.d(TAG, "onStart");
-        getSettings(); // settings may have changed meantime
+        SyncService.startService(this);
     }
 
     @Override
@@ -134,45 +157,6 @@ public class PlaylistsActivity extends AppCompatActivity implements SyncServiceR
         }
     }
 
-    private void getPLaylists() {
-        //SyncService.startActionGetPlaylists(this, server);
-        showSpinner();
-        JsonArrayRequest playlistsReq = new JsonArrayRequest(Request.Method.GET, server + "playlists", null,
-            new Response.Listener<JSONArray>() {
-                @Override
-                public void onResponse(JSONArray resp) {
-                    Log.d(TAG, "Got playlists");
-                    playlists.clear();
-                    for(int i = 0; i < resp.length(); i++) {
-                        try {
-                            JSONObject playlist = resp.getJSONObject(i);
-                            HashMap<String, String> plitem = new HashMap<String, String>();
-                            plitem.put(TAG_PLAYLIST_TITLE, playlist.getString(TAG_PLAYLIST_TITLE));
-                            plitem.put(TAG_PLAYLIST_ID, playlist.getString(TAG_PLAYLIST_ID));
-                            plitem.put(TAG_PLAYLIST_STATUS, "OK");
-                            playlists.add(plitem);
-                            adapter.notifyDataSetChanged();
-                        } catch (JSONException e) {
-                            e.printStackTrace();
-                        }
-                    }
-                    swipeContainer.setRefreshing(false);
-                }
-                }, new Response.ErrorListener() {
-                    @Override
-                    public void onErrorResponse(VolleyError error) {
-                        Log.d(TAG, "Error: " + error.getMessage());
-                        swipeContainer.setRefreshing(false);
-                    }
-                });
-        queue.add(playlistsReq);
-    }
-
-    public void onReceiveResult(int status, Bundle result) {
-        Log.d(TAG, result.getString("playlists"));
-
-    }
-
     private void showSpinner() {
         swipeContainer.post(new Runnable() {
             @Override
@@ -180,15 +164,5 @@ public class PlaylistsActivity extends AppCompatActivity implements SyncServiceR
                 swipeContainer.setRefreshing(true);
             }
         });
-    }
-
-    private void getSettings() {
-        // Loads defaults from the settings ui file
-        PreferenceManager.setDefaultValues(this, R.xml.settings, false);
-        // get the settings
-        SP = PreferenceManager.getDefaultSharedPreferences(this);
-        // load settings into local variables with defaults
-        server = SP.getString("server", getResources().getString(R.string.default_server));
-        api_key = SP.getString("api_key", "");
     }
 }
