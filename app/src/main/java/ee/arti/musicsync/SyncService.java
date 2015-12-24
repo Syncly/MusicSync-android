@@ -4,12 +4,9 @@ import android.app.Service;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
-import android.os.Bundle;
 import android.os.IBinder;
 import android.preference.PreferenceManager;
 import android.util.Log;
-
-import com.android.volley.toolbox.JsonArrayRequest;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -103,27 +100,32 @@ public class SyncService extends Service {
 
         public void run() {
             String addr = "";
+            if (ACTION_GET_PLAYLISTS.equals(action)) {
+                addr = server+"/playlists";
+            } else if (ACTION_GET_SONGS.equals(action)) {
+                addr = server+"/playlists/"+playlist_id+"/songs";
+            }
+            Log.d(TAG, "Reading stream");
+            responseParser(get(addr));
+            Log.d(TAG, "thread has ended its code");
+        }
+
+        public InputStream get(String addr) {
             try {
-                if (ACTION_GET_PLAYLISTS.equals(action)) {
-                    addr = server+"/playlists";
-                } else if (ACTION_GET_SONGS.equals(action)) {
-                    addr = server+"/playlists/"+playlist_id+"/songs";
-                }
                 URL url = new URL(addr);
                 HttpURLConnection urlConnection = (HttpURLConnection) url.openConnection();
                 Log.d(TAG, "HTTP response: " + urlConnection.getResponseCode());
                 InputStream inputStream = new BufferedInputStream(urlConnection.getInputStream());
-                Log.d(TAG, "Reading stream");
-                responseParser(inputStream);
+                return inputStream;
             } catch (MalformedURLException e) {
                 e.printStackTrace();
                 sendError("Bad backend server URL");
             } catch (IOException e) {
-                Log.e(TAG, "Error on url openConnection: "+e.getMessage());
+                Log.e(TAG, "Error on url openConnection: " + e.getMessage());
                 e.printStackTrace();
                 sendError("Server connection failed: "+e.getMessage());
             }
-            Log.d(TAG, "thread has ended its code");
+            return null;
         }
 
         public void sendError(String message) {
@@ -134,15 +136,20 @@ public class SyncService extends Service {
             context.sendBroadcast(intent);
         }
 
-        public void responseParser(InputStream inputStream) throws IOException {
-            BufferedReader br = new BufferedReader(new InputStreamReader(inputStream));
-            StringBuilder sb = new StringBuilder();
-            String line;
-            while ((line = br.readLine()) != null) {
-                sb.append(line+"\n");
+        public void responseParser(InputStream inputStream) {
+            try {
+                BufferedReader br = new BufferedReader(new InputStreamReader(inputStream));
+                StringBuilder sb = new StringBuilder();
+                String line;
+                while ((line = br.readLine()) != null) {
+                    sb.append(line + "\n");
+                }
+                br.close();
+                sendResponse(sb.toString());
+            } catch (IOException|NullPointerException e) {
+                e.printStackTrace();
+                sendError("Response reading failed "+ e.getMessage());
             }
-            br.close();
-            sendResponse(sb.toString());
         }
 
         public void sendResponse(String resp) {
