@@ -38,6 +38,8 @@ public class SyncService extends Service {
     public static final String ACTION_GET_PLAYLISTS = "service.get_playlists";
     public static final String ACTION_GET_SONGS = "service.get_songs";
 
+    public static final String EXTRA_PLAYLIST_ID = "service.playlist_id";
+
     private boolean isRunning  = false;
     private Thread tEvents;
 
@@ -70,11 +72,25 @@ public class SyncService extends Service {
         context.startService(intent);
     }
 
+    static public void getSongs(Context context, String playlist_id) {
+        Intent intent = new Intent(context, SyncService.class);
+        intent.setAction(ACTION_GET_SONGS);
+        intent.putExtra(EXTRA_PLAYLIST_ID, playlist_id);
+        context.startService(intent);
+    }
+
 
     public class HttpGet implements Runnable {
 
         private Context context;
         private String action;
+        private String playlist_id;
+
+        public HttpGet(Context context, String action, String playlist_id) {
+            this.context = context;
+            this.action = action;
+            this.playlist_id = playlist_id;
+        }
 
         public HttpGet(Context context, String action) {
             this.context = context;
@@ -90,6 +106,8 @@ public class SyncService extends Service {
             try {
                 if (ACTION_GET_PLAYLISTS.equals(action)) {
                     addr = server+"/playlists";
+                } else if (ACTION_GET_SONGS.equals(action)) {
+                    addr = server+"/playlists/"+playlist_id+"/songs";
                 }
                 URL url = new URL(addr);
                 HttpURLConnection urlConnection = (HttpURLConnection) url.openConnection();
@@ -99,11 +117,21 @@ public class SyncService extends Service {
                 responseParser(inputStream);
             } catch (MalformedURLException e) {
                 e.printStackTrace();
+                sendError("Bad backend server URL");
             } catch (IOException e) {
                 Log.e(TAG, "Error on url openConnection: "+e.getMessage());
                 e.printStackTrace();
+                sendError("Server connection failed: "+e.getMessage());
             }
             Log.d(TAG, "thread has ended its code");
+        }
+
+        public void sendError(String message) {
+            Intent intent = new Intent();
+            intent.setAction(NOTIFICATION);
+            intent.putExtra("action", this.action);
+            intent.putExtra("error", message);
+            context.sendBroadcast(intent);
         }
 
         public void responseParser(InputStream inputStream) throws IOException {
@@ -141,7 +169,27 @@ public class SyncService extends Service {
                     e.printStackTrace();
                 }
             } else if (ACTION_GET_SONGS.equals(action)) {
-                Log.d(TAG, ACTION_GET_PLAYLISTS + " Not implemented");
+                Intent intent = new Intent();
+                intent.setAction(NOTIFICATION);
+                intent.putExtra("action", this.action);
+
+                try {
+                    JSONArray jssongs = new JSONArray(resp);
+
+                    ArrayList<HashMap> ba = new ArrayList<>();
+                    for (int i = 0; i < jssongs.length(); i++) {
+                        JSONObject jssong = jssongs.getJSONObject(i);
+                        HashMap<String, String> p = new HashMap();
+                        p.put(PlaylistListActivity.TAG_SONG_STATUS, jssong.optString("status", "OK"));
+                        p.put(PlaylistListActivity.TAG_SONG_TITLE, jssong.getString("title"));
+                        p.put(PlaylistListActivity.TAG_SONG_ID, jssong.getString("_id"));
+                        ba.add(p);
+                    }
+                    intent.putExtra("data", ba);
+                    context.sendBroadcast(intent);
+                }catch (JSONException e) {
+                    e.printStackTrace();
+                }
             }
         }
     }
@@ -180,7 +228,7 @@ public class SyncService extends Service {
 
         if (intent != null) {
             String action = intent.getAction();
-
+            Log.d(TAG, "Start Action: "+ action);
             if (ACTION_START.equals(action)) {
                 Log.d(TAG, "ACTION_START");
                 if (tEvents == null || !tEvents.isAlive()) {
@@ -193,9 +241,13 @@ public class SyncService extends Service {
             } else if (ACTION_STOP.equals(action)) {
                 stopSelf();
             } else if (ACTION_UPDATE_SETTINGS.equals(action)) {
+                Log.d(TAG, "updateSettings, server: "+ server);
                 getSettings();
+                Log.d(TAG, "updateSettings after, server: " + server);
             } else if (ACTION_GET_PLAYLISTS.equals(action)) {
                 new Thread(new HttpGet(SyncService.this, action)).start();
+            } else if (ACTION_GET_SONGS.equals(action)) {
+                new Thread(new HttpGet(SyncService.this, action, intent.getStringExtra(EXTRA_PLAYLIST_ID))).start();
             }
         }
         return Service.START_NOT_STICKY;

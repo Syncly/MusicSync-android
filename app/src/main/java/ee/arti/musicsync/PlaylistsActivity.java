@@ -61,7 +61,7 @@ public class PlaylistsActivity extends AppCompatActivity {
             if (bundle != null) {
                 String string = bundle.getString("message");
                 //Toast.makeText(PlaylistsActivity.this, string, Toast.LENGTH_LONG).show();
-                if (bundle.containsKey("action")){
+                if (bundle.containsKey("action") && !bundle.containsKey("error")){
                     Log.d(TAG, "action " + bundle.get("action"));
                     ArrayList<HashMap> pl = (ArrayList)bundle.getSerializable("data");
                     playlists.clear();
@@ -69,6 +69,11 @@ public class PlaylistsActivity extends AppCompatActivity {
                         playlists.add(el);
                     }
                     adapter.notifyDataSetChanged();
+                    swipeContainer.setRefreshing(false);
+                } else if (bundle.containsKey("error")) {
+                    setContentView(R.layout.acivity_error);
+                    TextView terr = (TextView)findViewById(R.id.errorMessage);
+                    terr.setText(bundle.getString("error"));
                     swipeContainer.setRefreshing(false);
                 }
             }

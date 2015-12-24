@@ -1,6 +1,9 @@
 package ee.arti.musicsync;
 
+import android.content.BroadcastReceiver;
+import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.preference.PreferenceManager;
 import android.support.v4.widget.SwipeRefreshLayout;
@@ -11,6 +14,8 @@ import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ListView;
 import android.widget.SimpleAdapter;
+import android.widget.TextView;
+import android.widget.Toast;
 
 import com.android.volley.Request;
 import com.android.volley.RequestQueue;
@@ -29,10 +34,10 @@ import java.util.HashMap;
 public class PlaylistListActivity extends AppCompatActivity {
 
     private static final String TAG = "SongsActivity";
-    private static final String TAG_SONG_TITLE = "title";
-    private static final String TAG_SONG_STATUS = "status";
-    private static final String TAG_SONG_ID = "_id";
-    private static final String TAG_PLAYLIST_ID = "playlist";
+    public static final String TAG_SONG_TITLE = "title";
+    public static final String TAG_SONG_STATUS = "status";
+    public static final String TAG_SONG_ID = "_id";
+    public static final String TAG_PLAYLIST_ID = "playlist";
 
     private String title; // Playlist name shown as this activitys title
     private String playlist_id; //
@@ -47,15 +52,48 @@ public class PlaylistListActivity extends AppCompatActivity {
     // updates spinner
     private SwipeRefreshLayout swipeContainer;
 
-    // settings object
-    private SharedPreferences SP;
+    private BroadcastReceiver receiver = new BroadcastReceiver() {
 
-    // internet suff
-    private String server;
-    private String api_key;
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            Log.d(TAG, "BroadcastReceiver");
+            Bundle bundle = intent.getExtras();
+            if (bundle != null) {
+                String string = bundle.getString("message");
+                //Toast.makeText(PlaylistsActivity.this, string, Toast.LENGTH_LONG).show();
+                if (bundle.containsKey("action") && !bundle.containsKey("error")){
+                    Log.d(TAG, "action " + bundle.get("action"));
+                    ArrayList<HashMap> pl = (ArrayList)bundle.getSerializable("data");
+                    songs.clear();
+                    for (HashMap<String, String> el: pl) {
+                        songs.add(el);
+                    }
+                    adapter.notifyDataSetChanged();
+                    swipeContainer.setRefreshing(false);
+                } else if (bundle.containsKey("error")) {
+                    setContentView(R.layout.acivity_error);
+                    TextView terr = (TextView)findViewById(R.id.errorMessage);
+                    terr.setText(bundle.getString("error"));
+                    swipeContainer.setRefreshing(false);
+                }
+            }
+        }
+    };
 
-    // volley
-    RequestQueue queue;
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        Log.d(TAG, "onResume");
+        registerReceiver(receiver, new IntentFilter(SyncService.NOTIFICATION));
+        SyncService.startService(this);
+    }
+    @Override
+    protected void onPause() {
+        super.onPause();
+        Log.d(TAG, "onPause");
+        unregisterReceiver(receiver);
+    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -74,8 +112,6 @@ public class PlaylistListActivity extends AppCompatActivity {
 
         playlist_id = intent.getStringExtra("_id");
 
-        getSettings();
-
         // adapter for showing the list of songs
         adapter=new SimpleAdapter(this, songs, R.layout.playlist_element,
                 new String[] {TAG_SONG_TITLE, TAG_SONG_STATUS},
@@ -84,12 +120,12 @@ public class PlaylistListActivity extends AppCompatActivity {
         // setup song view list
         songsListView = (ListView) findViewById(R.id.playlistsList);
         songsListView.setAdapter(adapter);
-        songsListView.setClickable(true);
         songsListView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
                 // When clicked, show a toast with the TextView text or do whatever you need.
                 HashMap<String, String> song = songs.get(position);
                 Log.d(TAG, song.get(TAG_SONG_TITLE));
+                Toast.makeText(getApplicationContext(), song.get(TAG_SONG_TITLE), Toast.LENGTH_SHORT).show();
             }
         });
 
@@ -100,55 +136,12 @@ public class PlaylistListActivity extends AppCompatActivity {
             @Override
             public void onRefresh() {
                 Log.d(TAG, "Refresh");
-                getSongs();
+                SyncService.getSongs(getApplicationContext(), playlist_id);
             }
         });
 
-        queue = Volley.newRequestQueue(this);
-
-        getSongs();
-    }
-
-    private void getSongs() {
+        SyncService.getSongs(this, playlist_id);
         showSpinner();
-        JsonArrayRequest playlistsReq = new JsonArrayRequest(
-                Request.Method.GET, server + "playlists/"+playlist_id+"/songs",
-                null, // params to send to the server
-                new Response.Listener<JSONArray>() {
-                    @Override
-                    public void onResponse(JSONArray resp) {
-                        //Log.d(TAG, resp.toString());
-                        for(int i = 0; i < resp.length(); i++) {
-                            try {
-                                JSONObject song = resp.getJSONObject(i);
-                                HashMap<String, String> plitem = new HashMap<String, String>();
-                                //
-                                plitem.put(TAG_SONG_TITLE, song.getString("title"));
-                                if (song.has(TAG_SONG_STATUS)) {
-                                    plitem.put(TAG_SONG_STATUS, song.getString("status"));
-                                } else {
-                                    plitem.put(TAG_SONG_STATUS, "Not synced");
-                                }
-                                plitem.put(TAG_SONG_ID, song.getString("_id"));
-                                songs.add(plitem);
-                                adapter.notifyDataSetChanged();
-                                swipeContainer.setRefreshing(false);
-                            } catch (JSONException e) {
-                                e.printStackTrace();
-                                swipeContainer.setRefreshing(false);
-                            }
-
-                        }
-                    }
-                },
-                new Response.ErrorListener() {
-                    @Override
-                    public void onErrorResponse(VolleyError error) {
-                        Log.d(TAG, "Error: " + error.getMessage());
-                        swipeContainer.setRefreshing(false);
-                    }
-                });
-        queue.add(playlistsReq);
     }
 
     private void showSpinner() {
@@ -160,13 +153,4 @@ public class PlaylistListActivity extends AppCompatActivity {
         });
     }
 
-    private void getSettings() {
-        // Loads defaults from the settings ui file
-        PreferenceManager.setDefaultValues(this, R.xml.settings, false);
-        // get the settings
-        SP = PreferenceManager.getDefaultSharedPreferences(this);
-        // load settings into local variables with defaults
-        server = SP.getString("server", getResources().getString(R.string.default_server));
-        api_key = SP.getString("api_key", "");
-    }
 }

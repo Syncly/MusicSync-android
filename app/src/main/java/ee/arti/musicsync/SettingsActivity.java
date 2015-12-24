@@ -10,7 +10,6 @@ public class SettingsActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_settings);
 
         // inserts the default android settings fragments into the settings layout
         getFragmentManager().beginTransaction().replace(android.R.id.content, new SettingsFragment()).commit();
