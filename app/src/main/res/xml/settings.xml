@@ -2,13 +2,18 @@
 <PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
 
     <EditTextPreference
-        android:title="@string/api_key_title"
-        android:key="api_key"
-        android:summary="@string/api_key_summary"/>
-
-    <EditTextPreference
         android:title="@string/server_title"
         android:key="server"
         android:summary="@string/server_sumary"
         android:defaultValue="@string/default_server"/>
-</PreferenceScreen>
+
+    <ee.arti.musicsync.LoginPreference
+        android:title="@string/login_title"
+        android:summary="@string/login_summary" />
+
+    <Preference
+        android:title="@string/storage_path_title"
+        android:summary="@string/storage_path_summary"
+        android:key="storage_path" />
+
+ </PreferenceScreen>

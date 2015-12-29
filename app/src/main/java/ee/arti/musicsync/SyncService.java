@@ -23,7 +23,7 @@ import java.net.URL;
 import java.util.ArrayList;
 import java.util.HashMap;
 
-public class SyncService extends Service {
+public class SyncService extends Service implements SharedPreferences.OnSharedPreferenceChangeListener {
 
     private static final String TAG = "SyncService";
 
@@ -31,7 +31,6 @@ public class SyncService extends Service {
 
     public static final String ACTION_START = "service.start";
     public static final String ACTION_STOP = "service.stop";
-    public static final String ACTION_UPDATE_SETTINGS = "service.update_settings";
     public static final String ACTION_GET_PLAYLISTS = "service.get_playlists";
     public static final String ACTION_GET_SONGS = "service.get_songs";
 
@@ -41,8 +40,10 @@ public class SyncService extends Service {
     private Thread tEvents;
 
     // Settings
-    private SharedPreferences SP;
+    private SharedPreferences sharedPreferences;
     private String server;
+
+    public static final String KEY_SETTINGS_SERVER = "server";
 
 
     static public void startService(Context context) {
@@ -54,12 +55,6 @@ public class SyncService extends Service {
     static public void stopService(Context context) {
         Intent intent = new Intent(context, SyncService.class);
         intent.setAction(ACTION_STOP);
-        context.startService(intent);
-    }
-
-    static public void updateSettings(Context context) {
-        Intent intent = new Intent(context, SyncService.class);
-        intent.setAction(ACTION_UPDATE_SETTINGS);
         context.startService(intent);
     }
 
@@ -215,18 +210,27 @@ public class SyncService extends Service {
     }
 
     private void getSettings() {
-        PreferenceManager.setDefaultValues(this, R.xml.settings, false);
-        // get the settings
-        SP = PreferenceManager.getDefaultSharedPreferences(this);
-        // load settings into local variables with defaults
-        server = SP.getString("server", getResources().getString(R.string.default_server));
+        onSharedPreferenceChanged(sharedPreferences, KEY_SETTINGS_SERVER);
     }
+
+    public void onSharedPreferenceChanged(SharedPreferences sharedPreferences, String key) {
+        Log.d(TAG+"SettngsChnge", key);
+        if (key.equals(KEY_SETTINGS_SERVER)) {
+            server = sharedPreferences.getString(KEY_SETTINGS_SERVER, getResources().getString(R.string.default_server));
+            Log.d(TAG+"SettngsChnge", server);
+        }
+    }
+
 
     @Override
     public void onCreate() {
         Log.i(TAG, "Service onCreate");
         isRunning = true;
-        getSettings();
+
+        PreferenceManager.setDefaultValues(this, R.xml.settings, false);
+        sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this);
+        sharedPreferences.registerOnSharedPreferenceChangeListener(this);
+        getSettings();  // load the values from sharedPreferences
     }
 
     @Override
@@ -247,10 +251,6 @@ public class SyncService extends Service {
                 }
             } else if (ACTION_STOP.equals(action)) {
                 stopSelf();
-            } else if (ACTION_UPDATE_SETTINGS.equals(action)) {
-                Log.d(TAG, "updateSettings, server: "+ server);
-                getSettings();
-                Log.d(TAG, "updateSettings after, server: " + server);
             } else if (ACTION_GET_PLAYLISTS.equals(action)) {
                 new Thread(new HttpGet(SyncService.this, action)).start();
             } else if (ACTION_GET_SONGS.equals(action)) {

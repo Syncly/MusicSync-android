@@ -5,6 +5,8 @@
     <string name="title_playlist_list">Songs</string>
     <string name="server_sumary">Server to used for syncing music</string>
     <string name="server_title">Backend Server</string>
-    <string name="api_key_summary">Please provide your api key from the sync server</string>
-    <string name="api_key_title">API Key</string>
+    <string name="login_title">Login</string>
+    <string name="login_summary">Credentials for logging into the backend server</string>
+    <string name="storage_path_title">Storage path</string>
+    <string name="storage_path_summary">File path where the music will be stored</string>
 </resources>
