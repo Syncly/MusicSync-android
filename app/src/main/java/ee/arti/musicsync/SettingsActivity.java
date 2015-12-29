@@ -10,6 +10,7 @@ import android.preference.PreferenceScreen;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
+import android.widget.Toast;
 
 public class SettingsActivity extends AppCompatActivity {
 
@@ -44,12 +45,15 @@ public class SettingsActivity extends AppCompatActivity {
         }
         @Override
         public void onActivityResult(int requestCode, int resultCode, Intent resultData){
+            //TODO: Folder selection saving and figure out how to use it to save files
             Log.d(TAG, "ActivityResult");
             if (requestCode == ACTION_SELECT_STORAGE_PATH){
                 if (resultCode == Activity.RESULT_OK) {
                     Log.d(TAG, resultData.getData().toString());
+                    Toast.makeText(getActivity(), resultData.getData().toString(), Toast.LENGTH_SHORT).show();
                 } else if (resultCode == Activity.RESULT_CANCELED) {
                     Log.d(TAG, "Result canceled");
+                    Toast.makeText(getActivity(), "Folder selection canceled", Toast.LENGTH_SHORT).show();
                 }
             }
         }
