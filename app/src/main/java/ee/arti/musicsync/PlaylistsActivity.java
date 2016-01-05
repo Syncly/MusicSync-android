@@ -15,10 +15,12 @@ import android.widget.AdapterView;
 import android.widget.ListView;
 import android.widget.SimpleAdapter;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import java.util.ArrayList;
 import java.util.HashMap;
 
+import ee.arti.musicsync.backend.Events;
 import ee.arti.musicsync.backend.HttpGet;
 import ee.arti.musicsync.backend.SyncService;
 
@@ -66,11 +68,43 @@ public class PlaylistsActivity extends AppCompatActivity {
         }
     };
 
+    private BroadcastReceiver responseError = new BroadcastReceiver() {
+
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            Log.d(TAG, "responseError");
+            Bundle bundle = intent.getExtras();
+            if (bundle != null) {
+                if (bundle.containsKey("error")) {
+                    setContentView(R.layout.acivity_error);
+                    TextView terr = (TextView)findViewById(R.id.errorMessage);
+                    terr.setText(bundle.getString("error"));
+                    swipeContainer.setRefreshing(false);
+                }
+            }
+        }
+    };
+
+    private BroadcastReceiver responseEvent= new BroadcastReceiver() {
+
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            Bundle bundle = intent.getExtras();
+            if (bundle != null) {
+                Log.d(TAG, "responseEvent, make toast, event: "+bundle.getString("event"));
+                Toast.makeText(PlaylistsActivity.this, "Event: "+bundle.getString("event"), Toast.LENGTH_SHORT).show();
+            }
+        }
+    };
+
+
     @Override
     protected void onResume() {
         super.onResume();
         Log.d(TAG, "onResume");
-        registerReceiver(receiver, new IntentFilter(HttpGet.NOTIFICATION));
+        registerReceiver(receiver, new IntentFilter(HttpGet.RESPONSE_SUCCESS));
+        registerReceiver(responseError, new IntentFilter(HttpGet.RESPONSE_ERROR));
+        registerReceiver(responseEvent, new IntentFilter(Events.RESPONSE_EVENT));
         SyncService.startService(this);
     }
     @Override
@@ -78,6 +112,8 @@ public class PlaylistsActivity extends AppCompatActivity {
         super.onPause();
         Log.d(TAG, "onPause");
         unregisterReceiver(receiver);
+        unregisterReceiver(responseError);
+        unregisterReceiver(responseEvent);
     }
 
     @Override

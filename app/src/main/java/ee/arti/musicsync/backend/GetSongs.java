@@ -35,6 +35,7 @@ public class GetSongs extends HttpGet implements Runnable {
         try {
             if (server == null) {
                 Log.d(TAG, "Server is null, can't proceed");
+                sendError();
                 return;
             } else if (this.playlist_id == null) {
                 Log.d(TAG, "Playlist id can't be null");
@@ -62,7 +63,7 @@ public class GetSongs extends HttpGet implements Runnable {
             br.close();
 
             Intent intent = new Intent();
-            intent.setAction(NOTIFICATION);
+            intent.setAction(RESPONSE_SUCCESS);
             intent.putExtra("action", ACTION);
 
             JSONArray jssongs = new JSONArray(sb.toString());

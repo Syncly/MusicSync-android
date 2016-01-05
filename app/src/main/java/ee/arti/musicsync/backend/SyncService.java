@@ -35,7 +35,7 @@ public class SyncService extends Service implements SharedPreferences.OnSharedPr
 
     public static final String EXTRA_PLAYLIST_ID = "service.playlist_id";
 
-    private boolean isRunning  = false;
+    public boolean isRunning  = false;
     private Thread tEvents;
 
     // Settings

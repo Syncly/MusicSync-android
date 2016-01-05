@@ -33,6 +33,7 @@ public class GetPlaylists extends HttpGet implements Runnable {
         try {
             if (server == null) {
                 Log.d(TAG, "Server is null, can't proceed");
+                sendError();
                 return;
             }
 
@@ -56,7 +57,7 @@ public class GetPlaylists extends HttpGet implements Runnable {
             br.close();
 
             Intent intent = new Intent();
-            intent.setAction(NOTIFICATION);
+            intent.setAction(RESPONSE_SUCCESS);
             intent.putExtra("action", ACTION);
 
             JSONArray jspls = new JSONArray(sb.toString());

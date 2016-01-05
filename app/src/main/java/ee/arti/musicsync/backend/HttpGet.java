@@ -16,7 +16,8 @@ public class HttpGet {
     private static final String TAG = "tHttpGet";
     private static final String ACTION = "HttpGet";
 
-    public static final String NOTIFICATION = "ee.arti.musicsync.backend.SyncService.NOTIFICATION";
+    public static final String RESPONSE_ERROR = "ee.arti.musicsync.backend.SyncService.ERROR";
+    public static final String RESPONSE_SUCCESS = "ee.arti.musicsync.backend.SyncService.SUCCESS";
 
     protected Context context;
     protected URL server;
@@ -50,7 +51,7 @@ public class HttpGet {
 
     public void sendError(String message) {
         Intent intent = new Intent();
-        intent.setAction(NOTIFICATION);
+        intent.setAction(RESPONSE_ERROR);
         intent.putExtra("action", ACTION);
         intent.putExtra("error", message);
         context.sendBroadcast(intent);

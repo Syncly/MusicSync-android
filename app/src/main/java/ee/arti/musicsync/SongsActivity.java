@@ -51,16 +51,28 @@ public class SongsActivity extends AppCompatActivity {
             if (bundle != null) {
                 String string = bundle.getString("message");
                 //Toast.makeText(PlaylistsActivity.this, string, Toast.LENGTH_LONG).show();
-                if (bundle.containsKey("action") && !bundle.containsKey("error")){
+                if (bundle.containsKey("action") && !bundle.containsKey("error")) {
                     Log.d(TAG, "action " + bundle.get("action"));
-                    ArrayList<HashMap> pl = (ArrayList)bundle.getSerializable("data");
+                    ArrayList<HashMap> pl = (ArrayList) bundle.getSerializable("data");
                     songs.clear();
-                    for (HashMap<String, String> el: pl) {
+                    for (HashMap<String, String> el : pl) {
                         songs.add(el);
                     }
                     adapter.notifyDataSetChanged();
                     swipeContainer.setRefreshing(false);
-                } else if (bundle.containsKey("error")) {
+                }
+            }
+        }
+    };
+
+    private BroadcastReceiver responseError = new BroadcastReceiver() {
+
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            Log.d(TAG, "responseError");
+            Bundle bundle = intent.getExtras();
+            if (bundle != null) {
+                if (bundle.containsKey("error")) {
                     setContentView(R.layout.acivity_error);
                     TextView terr = (TextView)findViewById(R.id.errorMessage);
                     terr.setText(bundle.getString("error"));
@@ -75,7 +87,8 @@ public class SongsActivity extends AppCompatActivity {
     protected void onResume() {
         super.onResume();
         Log.d(TAG, "onResume");
-        registerReceiver(receiver, new IntentFilter(HttpGet.NOTIFICATION));
+        registerReceiver(receiver, new IntentFilter(HttpGet.RESPONSE_SUCCESS));
+        registerReceiver(responseError, new IntentFilter(HttpGet.RESPONSE_ERROR));
         SyncService.startService(this);
     }
     @Override
@@ -83,6 +96,7 @@ public class SongsActivity extends AppCompatActivity {
         super.onPause();
         Log.d(TAG, "onPause");
         unregisterReceiver(receiver);
+        unregisterReceiver(responseError);
     }
 
     @Override
