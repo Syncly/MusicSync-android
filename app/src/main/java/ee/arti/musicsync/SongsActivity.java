@@ -4,8 +4,6 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
-import android.content.SharedPreferences;
-import android.preference.PreferenceManager;
 import android.support.v4.widget.SwipeRefreshLayout;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
@@ -20,7 +18,10 @@ import android.widget.Toast;
 import java.util.ArrayList;
 import java.util.HashMap;
 
-public class PlaylistListActivity extends AppCompatActivity {
+import ee.arti.musicsync.backend.SyncService;
+import ee.arti.musicsync.backend.HttpGet;
+
+public class SongsActivity extends AppCompatActivity {
 
     private static final String TAG = "SongsActivity";
     public static final String TAG_SONG_TITLE = "title";
@@ -74,7 +75,7 @@ public class PlaylistListActivity extends AppCompatActivity {
     protected void onResume() {
         super.onResume();
         Log.d(TAG, "onResume");
-        registerReceiver(receiver, new IntentFilter(SyncService.NOTIFICATION));
+        registerReceiver(receiver, new IntentFilter(HttpGet.NOTIFICATION));
         SyncService.startService(this);
     }
     @Override

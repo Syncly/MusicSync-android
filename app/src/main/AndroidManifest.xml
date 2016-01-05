@@ -18,9 +18,9 @@
             </intent-filter>
         </activity>
         <activity
-            android:name=".PlaylistListActivity"
+            android:name=".SongsActivity"
             android:label="@string/title_playlist_list"
-            android:parentActivityName=".PlaylistListActivity">
+            android:parentActivityName=".SongsActivity">
             <meta-data
                 android:name="android.support.PARENT_ACTIVITY"
                 android:value=".PlaylistsActivity" />
@@ -28,14 +28,14 @@
         <activity
             android:name=".SettingsActivity"
             android:label="@string/title_activity_settings"
-            android:parentActivityName=".PlaylistListActivity">
+            android:parentActivityName=".SongsActivity">
             <meta-data
                 android:name="android.support.PARENT_ACTIVITY"
                 android:value=".PlaylistsActivity" />
         </activity>
 
         <service
-            android:name=".SyncService"
+            android:name=".backend.SyncService"
             android:exported="false"/>
         <service
             android:name=".SyncEventsService"

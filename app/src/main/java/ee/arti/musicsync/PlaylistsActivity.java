@@ -4,8 +4,6 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
-import android.content.SharedPreferences;
-import android.preference.PreferenceManager;
 import android.support.v4.widget.SwipeRefreshLayout;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
@@ -17,10 +15,12 @@ import android.widget.AdapterView;
 import android.widget.ListView;
 import android.widget.SimpleAdapter;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+
+import ee.arti.musicsync.backend.HttpGet;
+import ee.arti.musicsync.backend.SyncService;
 
 public class PlaylistsActivity extends AppCompatActivity {
 
@@ -70,7 +70,7 @@ public class PlaylistsActivity extends AppCompatActivity {
     protected void onResume() {
         super.onResume();
         Log.d(TAG, "onResume");
-        registerReceiver(receiver, new IntentFilter(SyncService.NOTIFICATION));
+        registerReceiver(receiver, new IntentFilter(HttpGet.NOTIFICATION));
         SyncService.startService(this);
     }
     @Override
@@ -99,7 +99,7 @@ public class PlaylistsActivity extends AppCompatActivity {
                 // When clicked, show a toast with the TextView text or do whatever you need.
                 HashMap<String, String> playlist = playlists.get(position);
                 Log.d(TAG, "Showing songs in " + playlist.get(TAG_PLAYLIST_TITLE));
-                Intent showPlaylist = new Intent(getApplicationContext(), PlaylistListActivity.class);
+                Intent showPlaylist = new Intent(getApplicationContext(), SongsActivity.class);
                 showPlaylist.putExtra(TAG_PLAYLIST_TITLE, playlist.get(TAG_PLAYLIST_TITLE));
                 showPlaylist.putExtra(TAG_PLAYLIST_ID, playlist.get(TAG_PLAYLIST_ID));
                 startActivity(showPlaylist);
