@@ -37,9 +37,6 @@
         <service
             android:name=".backend.SyncService"
             android:exported="false"/>
-        <service
-            android:name=".SyncEventsService"
-            android:exported="false"/>
     </application>
 
 </manifest>
