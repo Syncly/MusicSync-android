@@ -35,8 +35,6 @@ public class PlaylistsActivity extends AppCompatActivity {
     ArrayList<HashMap<String, String>> playlists = new ArrayList<HashMap<String, String>>();;
     // converts array list to a suitable format for ListView
     SimpleAdapter adapter;
-    // playlists list view
-    private ListView playlistsListView;
 
     private SwipeRefreshLayout swipeContainer;
 
@@ -74,13 +72,16 @@ public class PlaylistsActivity extends AppCompatActivity {
         public void onReceive(Context context, Intent intent) {
             Log.d(TAG, "responseError");
             Bundle bundle = intent.getExtras();
-            if (bundle != null) {
-                if (bundle.containsKey("error")) {
+            if (bundle != null && bundle.containsKey("error") && bundle.containsKey("action")) {
+                if (bundle.getString("action").equals(Events.ACTION)) {
+                    Toast.makeText(PlaylistsActivity.this, "Error: "+bundle.getString("error"), Toast.LENGTH_SHORT).show();
+                } else {
                     setContentView(R.layout.acivity_error);
-                    TextView terr = (TextView)findViewById(R.id.errorMessage);
+                    TextView terr = (TextView) findViewById(R.id.errorMessage);
                     terr.setText(bundle.getString("error"));
                     swipeContainer.setRefreshing(false);
                 }
+                Log.d(TAG, "responseError, action: "+bundle.getString("action") + " error: " + bundle.getString("error"));
             }
         }
     };
@@ -128,7 +129,7 @@ public class PlaylistsActivity extends AppCompatActivity {
                 new int[] {R.id.name, R.id.status});
 
         // Setup playlist viewer list
-        playlistsListView = (ListView) findViewById(R.id.playlistsList);
+        ListView playlistsListView = (ListView) findViewById(R.id.playlistsList);
         playlistsListView.setAdapter(adapter);
         playlistsListView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {

@@ -14,7 +14,7 @@ import java.net.URL;
 public class HttpGet {
 
     private static final String TAG = "tHttpGet";
-    private static final String ACTION = "HttpGet";
+    public static final String ACTION = "HttpGet";
 
     public static final String RESPONSE_ERROR = "ee.arti.musicsync.backend.SyncService.ERROR";
     public static final String RESPONSE_SUCCESS = "ee.arti.musicsync.backend.SyncService.SUCCESS";

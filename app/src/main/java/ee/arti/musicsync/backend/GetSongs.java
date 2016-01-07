@@ -22,7 +22,7 @@ import ee.arti.musicsync.SongsActivity;
 public class GetSongs extends HttpGet implements Runnable {
 
     private static final String TAG = "tGetSongs";
-    private static final String ACTION = "GetSongs";
+    public static final String ACTION = "GetSongs";
 
     private String playlist_id;
 

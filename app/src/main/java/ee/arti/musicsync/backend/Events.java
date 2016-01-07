@@ -14,14 +14,17 @@ import java.net.URL;
 public class Events extends HttpGet implements Runnable {
 
     private static final String TAG ="tEvents";
+    public static final String ACTION = "Events";
 
     public static final String RESPONSE_EVENT = "ee.arti.musicsync.backend.SyncService.EVENT";
 
     private String lastEventID = null;
     private int retry = 3000;  // retry connecting to the server after about 3000 ms
+    private DatabaseHelper db;
 
     public Events(Context context, String server) {
         super(context, server);
+        db = DatabaseHelper.getHelper(context);
     }
 
     public void run() {
@@ -62,11 +65,9 @@ public class Events extends HttpGet implements Runnable {
                     context.sendBroadcast(intent);
                     Log.d(TAG, "intent - event:"+intent.getStringExtra("event")+" data:"+intent.getStringExtra("data"));
                     intent = null;
-                }
-                else if (line.startsWith(":")) {
+                } else if (line.startsWith(":")) {
                     // ignore
-                }
-                else if (line.contains(":")) {
+                } else if (line.contains(":")) {
                     if (intent == null) {
                         intent = new Intent();
                         intent.setAction(RESPONSE_EVENT);
@@ -83,8 +84,7 @@ public class Events extends HttpGet implements Runnable {
 
                     if (field.equals("event")) {
                         intent.putExtra("event", value);
-                    }
-                    else if (field.equals("data")) {
+                    } else if (field.equals("data")) {
                         String prev_data = intent.getStringExtra("data");
                         StringBuilder data;
                         if (prev_data == null) {
@@ -95,24 +95,20 @@ public class Events extends HttpGet implements Runnable {
                         data.append(value);
                         data.append("\n");
                         intent.putExtra("data", data.toString());
-                    }
-                    else if (field.equals("id")) {
+                    } else if (field.equals("id")) {
                         this.lastEventID = value;
                         intent.putExtra("id", value);
-                    }
-                    else if (field.equals("retry")) {
+                    } else if (field.equals("retry")) {
                         try {
                             this.retry = Integer.parseInt(value);
                         } catch (NumberFormatException e) {
                             // server doesn't rtfm but lets not panic much about it
                             e.printStackTrace();
                         }
-                    }
-                    else {
+                    } else {
                         // unknown field, ignoring
                     }
-                }
-                else {
+                } else {
                     // unknown field, ignoring
                 }
             }
