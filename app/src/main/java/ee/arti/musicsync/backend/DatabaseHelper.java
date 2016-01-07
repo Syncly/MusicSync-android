@@ -18,10 +18,10 @@ public class DatabaseHelper extends SQLiteOpenHelper {
     public static final String COLUMN_PLAYLIST_ID = "playlist";
     public static final String COLUMN_URL = "url";
     public static final String COLUMN_STATUS_TYPE = "status_type";
-    public static final String COLUMN_STATUS_PROGRESS = "status_type";
+    public static final String COLUMN_STATUS_PROGRESS = "status_progress";
 
     public static final String DATABASE_NAME = "MusicSync.db";
-    public static final int DATABASE_VERSION = 0;
+    public static final int DATABASE_VERSION = 1;
 
     public static final String DATABASE_CREATE =
             "create table "+TABLE_PLAYLISTS
