@@ -1,5 +1,6 @@
 package ee.arti.musicsync.backend;
 
+import android.content.ContentValues;
 import android.content.Context;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
@@ -27,8 +28,8 @@ public class Database {
         // do nothing, android will clean up the connection on app close
     }
 
-    public List<Playlist> getAllPlaylists () {
-        List<Playlist> playlists = new ArrayList<>();
+    public ArrayList<Playlist> getAllPlaylists () {
+        ArrayList<Playlist> playlists = new ArrayList<>();
 
         Cursor cursor = db.query(DatabaseHelper.TABLE_PLAYLISTS, Playlist.columns,
                               null, null, null, null, null);
@@ -42,11 +43,16 @@ public class Database {
         return playlists;
      }
 
-    public List<Song> getAllSongsInPlaylist (Playlist playlist) {
-        List<Song> songs = new ArrayList<>();
+    public ArrayList<Song> getAllSongsInPlaylist (Playlist playlist) {
+        return getAllSongsInPlaylist(playlist.getId());
+    }
+
+    public ArrayList<Song> getAllSongsInPlaylist (String id) {
+        ArrayList<Song> songs = new ArrayList<>();
+        String[] args = {id};
 
         Cursor cursor = db.query(DatabaseHelper.TABLE_SONGS, Song.columns,
-                null, null, null, null, null);
+                DatabaseHelper.COLUMN_PLAYLIST_ID+" = ?", args, null, null, null);
         cursor.moveToFirst();
         while (!cursor.isAfterLast()) {
             Song song = new Song(cursor);
@@ -84,7 +90,7 @@ public class Database {
 
     public void addPlaylist(Playlist playlist) {
         long rowID = db.insert(DatabaseHelper.TABLE_PLAYLISTS, null, playlist.getValues());
-        Log.d(TAG, "Inserted playlist "+playlist.getName()+" with rowID"+rowID);
+        Log.d(TAG, "Inserted playlist " + playlist.getName() + " with rowID " + rowID);
     }
 
     public void addSong(Song song) {
@@ -93,12 +99,33 @@ public class Database {
     }
 
     public void deletePlaylist(Playlist playlist) {
-        db.delete(DatabaseHelper.TABLE_SONGS, DatabaseHelper.COLUMN_PLAYLIST_ID+" = "+playlist.getId(), null);
-        db.delete(DatabaseHelper.TABLE_PLAYLISTS, DatabaseHelper.COLUMN_ID+" = "+playlist.getId(), null);
+        deletePlaylist(playlist.getId());
     }
 
-    public void deleteSong(Playlist playlist, Song song) {
-        db.delete(DatabaseHelper.TABLE_SONGS, DatabaseHelper.COLUMN_ID+" = "+song.getId(), null);
+    public void deletePlaylist(String id) {
+        db.delete(DatabaseHelper.TABLE_SONGS, DatabaseHelper.COLUMN_PLAYLIST_ID+" = "+id, null);
+        db.delete(DatabaseHelper.TABLE_PLAYLISTS, DatabaseHelper.COLUMN_ID + " = " + id, null);
     }
 
+    public void deleteSong(Song song) {
+        deleteSong(song.getId());
+    }
+
+    public void deleteSong(String id) {
+        db.delete(DatabaseHelper.TABLE_SONGS, DatabaseHelper.COLUMN_ID + " = " + id, null);
+    }
+
+    public Playlist updatePlaylistStatusProgress(Playlist playlist) {
+        return updatePlaylistStatusProgress(playlist.getId());
+    }
+
+    public Playlist updatePlaylistStatusProgress(String id) {
+        ContentValues values = new ContentValues();
+        ArrayList<Song> songs = getAllSongsInPlaylist(id);
+
+        values.put(DatabaseHelper.COLUMN_STATUS_PROGRESS, "SongCount: "+songs.size());
+
+        db.update(DatabaseHelper.TABLE_PLAYLISTS,values, DatabaseHelper.COLUMN_ID+" = ?", new String[] {id});
+        return getPlaylist(id);
+    }
 }

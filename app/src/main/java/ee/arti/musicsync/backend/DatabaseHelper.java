@@ -21,7 +21,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
     public static final String COLUMN_STATUS_PROGRESS = "status_progress";
 
     public static final String DATABASE_NAME = "MusicSync.db";
-    public static final int DATABASE_VERSION = 1;
+    public static final int DATABASE_VERSION = 2;
 
     public static final String DATABASE_CREATE =
             "create table "+TABLE_PLAYLISTS
@@ -31,7 +31,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
                     +COLUMN_TYPE+" text not null, "
                     +COLUMN_STATUS_TYPE+" text not null, "
                     +COLUMN_STATUS_PROGRESS+ " text"
-                +");"+
+                +"); "+
             "create table "+TABLE_SONGS
                 +" ("
                     +COLUMN_ID+" text primary key, "
@@ -42,7 +42,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
                     +COLUMN_STATUS_TYPE+" text not null, "
                     +COLUMN_STATUS_PROGRESS+ " text, "
                     +"FOREIGN KEY("+COLUMN_PLAYLIST_ID+") REFERENCES "+TABLE_PLAYLISTS+"("+COLUMN_ID+")"
-                +");";
+                +"); ";
 
     private static DatabaseHelper instance;
 
@@ -69,5 +69,10 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         db.execSQL("DROP TABLE IF EXISTS " + TABLE_PLAYLISTS);
         db.execSQL("DROP TABLE IF EXISTS " + TABLE_SONGS);
         onCreate(db);
+    }
+
+    @Override
+    public void onDowngrade(SQLiteDatabase db, int oldVersion, int newVersion) {
+        onUpgrade(db, oldVersion, newVersion);
     }
 }

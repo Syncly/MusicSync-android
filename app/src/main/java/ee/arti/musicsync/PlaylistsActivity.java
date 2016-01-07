@@ -1,6 +1,7 @@
 package ee.arti.musicsync;
 
 import android.content.BroadcastReceiver;
+import android.content.ContentValues;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
@@ -20,6 +21,7 @@ import android.widget.Toast;
 import java.util.ArrayList;
 import java.util.HashMap;
 
+import ee.arti.musicsync.backend.DatabaseHelper;
 import ee.arti.musicsync.backend.Events;
 import ee.arti.musicsync.backend.HttpGet;
 import ee.arti.musicsync.backend.SyncService;
@@ -32,7 +34,7 @@ public class PlaylistsActivity extends AppCompatActivity {
     public static final String TAG_PLAYLIST_ID = "_id";
 
     // contains all the playlists
-    ArrayList<HashMap<String, String>> playlists = new ArrayList<HashMap<String, String>>();;
+    ArrayList<HashMap<String, String>> playlists = new ArrayList<>();;
     // converts array list to a suitable format for ListView
     SimpleAdapter adapter;
 
@@ -49,10 +51,14 @@ public class PlaylistsActivity extends AppCompatActivity {
                 //Toast.makeText(PlaylistsActivity.this, string, Toast.LENGTH_LONG).show();
                 if (bundle.containsKey("action") && !bundle.containsKey("error")){
                     Log.d(TAG, "action " + bundle.get("action"));
-                    ArrayList<HashMap> pl = (ArrayList)bundle.getSerializable("data");
+                    ArrayList<ContentValues> pls = (ArrayList)bundle.getSerializable("data");
                     playlists.clear();
-                    for (HashMap<String, String> el: pl) {
-                        playlists.add(el);
+                    for (ContentValues pl: pls) {
+                        HashMap<String, String> hmpl = new HashMap<>();
+                        hmpl.put(TAG_PLAYLIST_ID, pl.getAsString(DatabaseHelper.COLUMN_ID));
+                        hmpl.put(TAG_PLAYLIST_TITLE, pl.getAsString(DatabaseHelper.COLUMN_NAME));
+                        hmpl.put(TAG_PLAYLIST_STATUS, pl.getAsString(DatabaseHelper.COLUMN_STATUS_PROGRESS));
+                        playlists.add(hmpl);
                     }
                     adapter.notifyDataSetChanged();
                     swipeContainer.setRefreshing(false);

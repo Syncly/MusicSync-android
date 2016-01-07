@@ -21,6 +21,7 @@ public class HttpGet {
 
     protected Context context;
     protected URL server;
+    protected Database db;
 
     public HttpGet(Context context, String server) {
         this.context = context;
@@ -30,6 +31,8 @@ public class HttpGet {
             e.printStackTrace();
             sendError("Invalid backend server URL "+server);
         }
+        db = new Database(context);
+        db.open();
     }
 
     public InputStream get(URL url) {

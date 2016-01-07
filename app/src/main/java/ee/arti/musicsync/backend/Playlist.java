@@ -93,4 +93,9 @@ public class Playlist {
     public void setStatusProgress(String statusProgress) {
         this.statusProgress = statusProgress;
     }
+
+    @Override
+    public String toString() {
+        return getId() + " " +getName();
+    }
 }

@@ -20,11 +20,9 @@ public class Events extends HttpGet implements Runnable {
 
     private String lastEventID = null;
     private int retry = 3000;  // retry connecting to the server after about 3000 ms
-    private DatabaseHelper db;
 
     public Events(Context context, String server) {
         super(context, server);
-        db = DatabaseHelper.getHelper(context);
     }
 
     public void run() {
