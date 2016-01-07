@@ -59,15 +59,27 @@ public class Database {
     }
 
     public Playlist getPlaylist(String id) {
+        String[] args = {id};
         Cursor cursor = db.query(DatabaseHelper.TABLE_PLAYLISTS, Playlist.columns,
-                null, null, null, null, null);
-        return new Playlist(cursor);
+                DatabaseHelper.COLUMN_ID+" = ?", args, null, null, null);
+        cursor.moveToFirst();
+        if (cursor.getCount() > 0) {
+            return new Playlist(cursor);
+        } else {
+            return null;
+        }
     }
 
     public Song getSong(String id) {
+        String[] args = {id};
         Cursor cursor = db.query(DatabaseHelper.TABLE_SONGS, Song.columns,
-                null, null, null, null, null);
-        return new Song(cursor);
+                DatabaseHelper.COLUMN_ID+" = ?", args, null, null, null);
+        cursor.moveToFirst();
+        if (cursor.getCount() > 0) {
+            return new Song(cursor);
+        } else {
+            return null;
+        }
     }
 
     public void addPlaylist(Playlist playlist) {
