@@ -1,5 +1,6 @@
 package ee.arti.musicsync.backend;
 
+import android.content.ContentValues;
 import android.database.Cursor;
 
 public class Song extends Playlist {
@@ -24,13 +25,25 @@ public class Song extends Playlist {
     }
 
     public Song(Cursor cursor) {
-        this.setId(cursor.getString(cursor.getColumnIndex(columns[0])));
-        this.setName(cursor.getString(cursor.getColumnIndex(columns[1])));
-        this.setType(cursor.getString(cursor.getColumnIndex(columns[2])));
-        this.setUrl(cursor.getString(cursor.getColumnIndex(columns[3])));
-        this.setPlaylistId(cursor.getString(cursor.getColumnIndex(columns[4])));
-        this.setStatusType(cursor.getString(cursor.getColumnIndex(columns[5])));
-        this.setStatusProgress(cursor.getString(cursor.getColumnIndex(columns[6])));
+        this.setId(cursor.getString(cursor.getColumnIndex(DatabaseHelper.COLUMN_ID)));
+        this.setName(cursor.getString(cursor.getColumnIndex(DatabaseHelper.COLUMN_NAME)));
+        this.setType(cursor.getString(cursor.getColumnIndex(DatabaseHelper.COLUMN_TYPE)));
+        this.setUrl(cursor.getString(cursor.getColumnIndex(DatabaseHelper.COLUMN_URL)));
+        this.setPlaylistId(cursor.getString(cursor.getColumnIndex(DatabaseHelper.COLUMN_PLAYLIST_ID)));
+        this.setStatusType(cursor.getString(cursor.getColumnIndex(DatabaseHelper.COLUMN_STATUS_TYPE)));
+        this.setStatusProgress(cursor.getString(cursor.getColumnIndex(DatabaseHelper.COLUMN_STATUS_PROGRESS)));
+    }
+
+    public ContentValues getValues() {
+        ContentValues content = new ContentValues();
+        content.put(DatabaseHelper.COLUMN_ID, getId());
+        content.put(DatabaseHelper.COLUMN_NAME, getName());
+        content.put(DatabaseHelper.COLUMN_TYPE, getType());
+        content.put(DatabaseHelper.COLUMN_URL, getUrl());
+        content.put(DatabaseHelper.COLUMN_PLAYLIST_ID, getPlaylistId());
+        content.put(DatabaseHelper.COLUMN_STATUS_TYPE, getStatusType());
+        content.put(DatabaseHelper.COLUMN_STATUS_PROGRESS, getStatusProgress());
+        return content;
     }
 
     public String getUrl() {
