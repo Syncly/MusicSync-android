@@ -43,11 +43,11 @@ public class HttpGet {
             return inputStream;
         } catch (MalformedURLException e) {
             e.printStackTrace();
-            sendError("Bad backend server URL");
+            //sendError("Bad backend server URL");
         } catch (IOException e) {
             Log.e(TAG, "Error on url openConnection: " + e.getMessage());
             e.printStackTrace();
-            sendError("Server connection failed: "+e.getMessage());
+            //sendError("Server connection failed: "+e.getMessage());
         }
         return null;
     }

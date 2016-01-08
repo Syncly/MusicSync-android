@@ -89,14 +89,14 @@ public class GetPlaylists extends HttpGet implements Runnable {
                     playlist.setStatusProgress("Unknown");
                     db.addPlaylist(playlist);
                 }
-                playlist = db.updatePlaylistStatusProgress(playlist);
+                //playlist = db.updatePlaylistStatusProgress(playlist);
                 playlists.add(playlist.getValues());
                 newPlaylists.add(playlist.getId());
             }
 
             for (Playlist playlist: currentPlaylists) {
                 if (!newPlaylists.contains(playlist.getId())) {
-                    db.deletePlaylist(playlist);
+                    //db.deletePlaylist(playlist);
                 }
             }
             return playlists;
